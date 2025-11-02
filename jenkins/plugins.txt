@@ -1,0 +1,7 @@
+blueocean
+workflow-aggregator
+docker-workflow
+git
+github
+github-branch-source
+pipeline-stage-view

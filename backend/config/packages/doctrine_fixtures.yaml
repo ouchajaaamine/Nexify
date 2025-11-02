@@ -1,0 +1,4 @@
+doctrine_fixtures:
+    orm_purger:
+        # 1 = DELETE, 2 = TRUNCATE. Using TRUNCATE resets PostgreSQL sequences (ids) deterministically.
+        purge_mode: 2

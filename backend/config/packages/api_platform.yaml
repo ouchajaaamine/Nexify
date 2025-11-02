@@ -1,0 +1,18 @@
+api_platform:
+    title: Nexify API
+    version: 1.0.0
+    enable_swagger_ui: true
+    formats:
+        jsonld:
+            - application/ld+json
+        json:
+            - application/json
+        html:
+            - text/html
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    eager_loading:
+        max_joins: 200
+        enabled: true

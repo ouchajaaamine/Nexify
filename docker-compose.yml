@@ -1,0 +1,102 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: Nexify_postgres
+    environment:
+      POSTGRES_DB: Nexifydb
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres-data:/var/lib/postgresql/data
+    networks:
+      - Nexify_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d Nexifydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: Nexify_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - Nexify_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  # PHP Application (Symfony)
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: Nexify_app
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      DATABASE_URL: postgresql://app:app@postgres:5432/Nexifydb?serverVersion=16&charset=utf8
+      REDIS_URL: redis://redis:6379
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      FRONTEND_URL: http://localhost:3000
+      CORS_ALLOW_ORIGIN: ^https?://(localhost|frontend):3000$
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - Nexify_network
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/docker-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+  
+  # Next.js Frontend (dev mode)
+  frontend:
+    image: node:20-alpine
+    container_name: Nexify_frontend
+    working_dir: /app
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NODE_ENV: development
+      CI: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "npm i -g pnpm && pnpm install --no-frozen-lockfile --reporter=append-only && pnpm dev --hostname 0.0.0.0 -p 3000"
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    networks:
+      - Nexify_network
+    tty: true
+    stdin_open: true
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  Nexify_network:
+    driver: bridge

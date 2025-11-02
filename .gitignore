@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.docker
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Next.js build output
+.next/
+
+# Symfony cache and logs
+/var/cache/
+/var/log/
+/var/sessions/
+
+# Temporary folders
+tmp/
+temp/
+
+# Jenkins local data
+jenkins/jenkins_home/
+jenkins/.env
+# Docker data
+docker/postgres-data/

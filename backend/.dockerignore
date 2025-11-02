@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Environment files (we'll copy specific ones)
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache and logs
+var/cache/*
+var/log/*
+var/sessions/*
+!var/cache/.gitkeep
+!var/log/.gitkeep
+!var/sessions/.gitkeep
+
+# Vendor (will be installed in Dockerfile)
+# vendor/
+
+# Tests
+tests/
+
+# Documentation
+*.md
