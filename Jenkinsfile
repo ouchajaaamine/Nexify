@@ -5,7 +5,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 deleteDir()
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    userRemoteConfigs: [[
+                        url: scm.userRemoteConfigs[0].url,
+                        credentialsId: 'github-credentials'
+                    ]]
+                ])
             }
         }
         
