@@ -4,6 +4,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Ensure a clean workspace to avoid stale vendor/config artifacts
+                deleteDir()
                 checkout scm
             }
         }
@@ -61,7 +63,8 @@ pipeline {
             }
             steps {
                 dir('backend') {
-                    sh 'vendor/bin/phpstan analyse --error-format=table --no-progress --memory-limit=512M'
+                    // Pin config file explicitly to ensure consistent behavior across environments
+                    sh 'vendor/bin/phpstan analyse -c phpstan.neon --error-format=table --no-progress --memory-limit=512M'
                 }
             }
         }
