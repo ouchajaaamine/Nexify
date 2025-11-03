@@ -130,7 +130,13 @@ class ChatbotService
             }
         }
 
-        throw new \Exception('All Gemini endpoints failed: ' . ($lastException?->getMessage() ?? 'No endpoints available'));
+        // Avoid nullsafe/?? on a variable PHPStan may consider non-nullable.
+        $lastMessage = 'No endpoints available';
+        if ($lastException instanceof \Throwable) {
+            $lastMessage = $lastException->getMessage();
+        }
+
+        throw new \Exception('All Gemini endpoints failed: ' . $lastMessage);
     }
 
     /**
