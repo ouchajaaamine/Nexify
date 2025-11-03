@@ -42,8 +42,10 @@ class ChatbotService
     $cacheKey = 'chatbot_response_v' . self::CACHE_VERSION . '_' . md5($query . '|' . ($campaignId ?? 'none'));
 
         try {
-            return $this->cache->get($cacheKey, function(ItemInterface $item) use ($query, $campaignContext) {
-                $item->expiresAfter(600);
+            return $this->cache->get($cacheKey, function($item = null) use ($query, $campaignContext) {
+                if ($item instanceof ItemInterface) {
+                    $item->expiresAfter(600);
+                }
                 $prompt = $this->buildPrompt($query, $campaignContext);
                 return $this->callGeminiAPI($prompt);
             });
@@ -130,7 +132,6 @@ class ChatbotService
             }
         }
 
-        // Avoid nullsafe/?? on a variable PHPStan may consider non-nullable.
         $lastMessage = 'No endpoints available';
         if ($lastException instanceof \Throwable) {
             $lastMessage = $lastException->getMessage();
