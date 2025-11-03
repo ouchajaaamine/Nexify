@@ -63,7 +63,6 @@ pipeline {
             }
             steps {
                 dir('backend') {
-                    // Keep CI simple and deterministic: use the committed phpstan.dist.neon
                     sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
                 }
             }
@@ -95,21 +94,10 @@ pipeline {
                 }
             }
             steps {
-                dir('frontend') {
-                    sh '''
-                        trivy fs \
-                            --scanners vuln \
-                            --severity CRITICAL,HIGH,MEDIUM \
-                            --format table \
-                            --output trivy-frontend-report.json \
-                            --exit-code 0 \
-                            .
-                    '''
+                dir('backend') {
+                    // The test bootstrap will provide defaults when .env is missing, so run phpunit directly
+                    sh 'vendor/bin/phpunit --log-junit test-results.xml'
                 }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'frontend/trivy-frontend-report.json', allowEmptyArchive: true
                 }
             }
         }
