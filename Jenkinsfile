@@ -113,8 +113,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        docker build -t Nexify-backend:latest ./backend &
-                        docker build -t Nexify-frontend:latest ./frontend &
+                        docker build -t nexify-backend:latest ./backend &
+                        docker build -t nexify-frontend:latest ./frontend &
                         wait
                     '''
                 }
@@ -131,8 +131,8 @@ pipeline {
             }
             steps {
                 sh '''
-                    trivy image --severity CRITICAL,HIGH --format table --output trivy-backend-image.json --exit-code 0 Nexify-backend:latest &
-                    trivy image --severity CRITICAL,HIGH --format table --output trivy-frontend-image.json --exit-code 0 Nexify-frontend:latest &
+                    trivy image --severity CRITICAL,HIGH --format table --output trivy-backend-image.json --exit-code 0 nexify-backend:latest &
+                    trivy image --severity CRITICAL,HIGH --format table --output trivy-frontend-image.json --exit-code 0 nexify-frontend:latest &
                     wait
                 '''
             }
@@ -161,15 +161,15 @@ pipeline {
                 sh '''
                     COMMIT_SHA=$(git rev-parse --short HEAD)
                     
-                    docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA
-                    docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest
-                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA
-                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest
+                    docker tag nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-backend:$COMMIT_SHA
+                    docker tag nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-backend:latest
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-backend:$COMMIT_SHA
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-backend:latest
                     
-                    docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA
-                    docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest
-                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA
-                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest
+                    docker tag nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-frontend:$COMMIT_SHA
+                    docker tag nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-frontend:latest
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-frontend:$COMMIT_SHA
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-frontend:latest
                 '''
             }
         }
