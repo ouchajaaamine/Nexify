@@ -8,12 +8,18 @@ use App\Dto\ChatbotRequest;
 use App\Service\ChatbotService;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * @implements ProcessorInterface<ChatbotRequest, array<string, mixed>>
+ */
 final class ChatbotProcessor implements ProcessorInterface
 {
     public function __construct(
         private readonly ChatbotService $chatbotService
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): array
     {
         if (!$data instanceof ChatbotRequest) {

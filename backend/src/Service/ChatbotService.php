@@ -130,10 +130,7 @@ class ChatbotService
             }
         }
 
-        if ($lastException) {
-            throw new \Exception('All Gemini endpoints failed: ' . $lastException->getMessage(), 0, $lastException);
-        }
-        throw new \Exception('Gemini API not reachable');
+        throw new \Exception('All Gemini endpoints failed: ' . ($lastException?->getMessage() ?? 'No endpoints available'));
     }
 
     /**
@@ -173,12 +170,9 @@ class ChatbotService
         if ($statusCode !== 200) {
             $body = $response->getContent(false);
             $err = null;
-            try {
-                $errJson = json_decode($body, true);
-                if (isset($errJson['error']['message'])) {
-                    $err = $errJson['error']['message'];
-                }
-            } catch (\Throwable $t) {
+            $errJson = json_decode($body, true);
+            if (isset($errJson['error']['message'])) {
+                $err = $errJson['error']['message'];
             }
             $suffix = $err ? (" - " . $err) : '';
             throw new \Exception("Gemini API error ({$statusCode}) at {$label}{$suffix}");

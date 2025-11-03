@@ -13,6 +13,9 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
 
+/**
+ * @implements ProcessorInterface<LoginRequest, JsonResponse>
+ */
 class LoginProcessor implements ProcessorInterface
 {
     public function __construct(

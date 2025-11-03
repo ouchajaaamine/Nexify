@@ -244,6 +244,9 @@ class Campaign
         return $this;
     }
 
+    /**
+     * @return Collection<int, Metric>
+     */
     public function getMetrics(): Collection
     {
         return $this->metrics;
@@ -270,6 +273,9 @@ class Campaign
         return $this;
     }
 
+    /**
+     * @return Collection<int, Affiliate>
+     */
     public function getAffiliates(): Collection
     {
         return $this->affiliates;

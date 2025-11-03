@@ -9,7 +9,6 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 
 class ChatbotServiceTest extends TestCase
 {
@@ -20,7 +19,6 @@ class ChatbotServiceTest extends TestCase
         $parameterBag = $this->createMock(ParameterBagInterface::class);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $cache = $this->createMock(CacheInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
         // token
         $parameterBag->method('get')->willReturn('test-token');
         // fake response
@@ -34,7 +32,7 @@ class ChatbotServiceTest extends TestCase
         $cache->method('get')->willReturnCallback(fn($k, $cb) => $cb());
 
         // act
-        $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache, $logger);
+        $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache);
         $result = $service->generateResponse('hello', null);
         // assert
         $this->assertSame('LLM answer', $result);
@@ -47,7 +45,6 @@ class ChatbotServiceTest extends TestCase
         $parameterBag = $this->createMock(ParameterBagInterface::class);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $cache = $this->createMock(CacheInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
         $parameterBag->method('get')->willReturn('test-token');
 
         // fake response 'ok'
@@ -65,7 +62,7 @@ class ChatbotServiceTest extends TestCase
         });
         $cache->method('get')->willReturnCallback(fn($k, $cb) => $cb());
 
-        $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache, $logger);
+        $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache);
 
         // campaign context
         $campaignContext = [ 'campaign_id' => 1, 'name' => 'Spring Sale', 'budget' => '5000.00', 'current_metrics' => ['clicks'=>123] ];
