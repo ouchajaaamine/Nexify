@@ -4,7 +4,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Ensure a clean workspace to avoid stale vendor/config artifacts
                 deleteDir()
                 checkout scm
             }
