@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    options {
-        timeout(time: 30, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -14,41 +9,50 @@ pipeline {
             }
         }
         
-        stage('Parallel Build & Test') {
+        stage('Parallel Analysis & Build') {
             parallel {
                 stage('Backend Pipeline') {
                     agent {
                         docker {
-                            image 'composer:2'
+                            image 'php:8.2-cli'
                             reuseNode true
                         }
                     }
                     stages {
-                        stage('Backend: Install Dependencies') {
+                        stage('Backend Dependencies') {
                             steps {
                                 dir('backend') {
-                                    sh 'composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress'
+                                    sh '''
+                                        apt-get update -qq
+                                        apt-get install -y -qq git unzip
+                                        curl -sS https://getcomposer.org/installer | php
+                                        php composer.phar install --no-interaction --prefer-dist --no-progress
+                                    '''
                                 }
                             }
                         }
                         
-                        stage('Backend: PHPStan') {
-                            steps {
-                                dir('backend') {
-                                    sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
+                        stage('Backend Quality') {
+                            parallel {
+                                stage('PHPStan') {
+                                    steps {
+                                        dir('backend') {
+                                            sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        
-                        stage('Backend: PHPUnit') {
-                            steps {
-                                dir('backend') {
-                                    sh 'vendor/bin/phpunit --log-junit test-results.xml'
-                                }
-                            }
-                            post {
-                                always {
-                                    junit 'backend/test-results.xml'
+                                
+                                stage('PHPUnit') {
+                                    steps {
+                                        dir('backend') {
+                                            sh 'vendor/bin/phpunit --log-junit test-results.xml'
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            junit 'backend/test-results.xml'
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -63,15 +67,72 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Frontend: Install & Build') {
+                        stage('Frontend Build') {
                             steps {
                                 dir('frontend') {
                                     sh '''
                                         corepack enable
                                         corepack prepare pnpm@latest --activate
-                                        pnpm install --frozen-lockfile
+                                        pnpm install
                                         pnpm run build
                                     '''
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                stage('Security Scans') {
+                    agent {
+                        docker {
+                            image 'aquasec/trivy:latest'
+                            args '--entrypoint=""'
+                            reuseNode true
+                        }
+                    }
+                    stages {
+                        stage('Trivy Scans') {
+                            parallel {
+                                stage('Backend Dependencies') {
+                                    steps {
+                                        dir('backend') {
+                                            sh '''
+                                                trivy fs \
+                                                    --scanners vuln \
+                                                    --severity CRITICAL,HIGH \
+                                                    --format table \
+                                                    --output trivy-composer-report.json \
+                                                    --exit-code 0 \
+                                                    .
+                                            '''
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            archiveArtifacts artifacts: 'backend/trivy-composer-report.json', allowEmptyArchive: true
+                                        }
+                                    }
+                                }
+                                
+                                stage('Frontend Dependencies') {
+                                    steps {
+                                        dir('frontend') {
+                                            sh '''
+                                                trivy fs \
+                                                    --scanners vuln \
+                                                    --severity CRITICAL,HIGH \
+                                                    --format table \
+                                                    --output trivy-frontend-report.json \
+                                                    --exit-code 0 \
+                                                    .
+                                            '''
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            archiveArtifacts artifacts: 'frontend/trivy-frontend-report.json', allowEmptyArchive: true
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -80,57 +141,19 @@ pipeline {
             }
         }
         
-        stage('Security Scans') {
-            parallel {
-                stage('Trivy: Backend Dependencies') {
-                    agent {
-                        docker {
-                            image 'aquasec/trivy:latest'
-                            args '--entrypoint=""'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        dir('backend') {
-                            sh 'trivy fs --scanners vuln --severity CRITICAL,HIGH --format json --output trivy-composer-report.json --exit-code 0 .'
-                        }
-                    }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: 'backend/trivy-composer-report.json', allowEmptyArchive: true
-                        }
-                    }
-                }
-                
-                stage('Trivy: Frontend Dependencies') {
-                    agent {
-                        docker {
-                            image 'aquasec/trivy:latest'
-                            args '--entrypoint=""'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        dir('frontend') {
-                            sh 'trivy fs --scanners vuln --severity CRITICAL,HIGH --format json --output trivy-frontend-report.json --exit-code 0 .'
-                        }
-                    }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: 'frontend/trivy-frontend-report.json', allowEmptyArchive: true
-                        }
-                    }
-                }
-            }
-        }
-        
         stage('Build Docker Images') {
             steps {
-                sh 'docker build -t Nexify-backend:latest ./backend & docker build -t Nexify-frontend:latest ./frontend & wait'
+                script {
+                    sh '''
+                        docker build -t Nexify-backend:latest ./backend &
+                        docker build -t Nexify-frontend:latest ./frontend &
+                        wait
+                    '''
+                }
             }
         }
         
-        stage('Trivy: Scan Images') {
+        stage('Scan Docker Images') {
             agent {
                 docker {
                     image 'aquasec/trivy:latest'
@@ -140,8 +163,8 @@ pipeline {
             }
             steps {
                 sh '''
-                    trivy image --severity CRITICAL,HIGH --format json --output trivy-backend-image.json --exit-code 0 Nexify-backend:latest &
-                    trivy image --severity CRITICAL,HIGH --format json --output trivy-frontend-image.json --exit-code 0 Nexify-frontend:latest &
+                    trivy image --severity CRITICAL,HIGH --format table --output trivy-backend-image.json --exit-code 0 Nexify-backend:latest &
+                    trivy image --severity CRITICAL,HIGH --format table --output trivy-frontend-image.json --exit-code 0 Nexify-frontend:latest &
                     wait
                 '''
             }
@@ -152,7 +175,7 @@ pipeline {
             }
         }
         
-        stage('Push to ECR') {
+        stage('Authenticate to ECR') {
             steps {
                 withCredentials([
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
@@ -160,21 +183,26 @@ pipeline {
                 ]) {
                     sh '''
                         aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 911541042693.dkr.ecr.eu-west-3.amazonaws.com
-                        
-                        COMMIT_SHA=$(git rev-parse --short HEAD)
-                        
-                        docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA
-                        docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest
-                        docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA
-                        docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest
-                        
-                        docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA &
-                        docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest &
-                        docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA &
-                        docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest &
-                        wait
                     '''
                 }
+            }
+        }
+        
+        stage('Tag and Push to ECR') {
+            steps {
+                sh '''
+                    COMMIT_SHA=$(git rev-parse --short HEAD)
+                    
+                    docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA
+                    docker tag Nexify-backend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:$COMMIT_SHA
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-backend:latest
+                    
+                    docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA
+                    docker tag Nexify-frontend:latest 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:$COMMIT_SHA
+                    docker push 911541042693.dkr.ecr.eu-west-3.amazonaws.com/Nexify-frontend:latest
+                '''
             }
         }
     }
