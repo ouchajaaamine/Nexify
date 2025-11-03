@@ -63,8 +63,8 @@ pipeline {
             }
             steps {
                 dir('backend') {
-                    // Pin config file explicitly to ensure consistent behavior across environments
-                    sh 'vendor/bin/phpstan analyse -c phpstan.neon --error-format=table --no-progress --memory-limit=512M'
+                    // Keep CI simple and deterministic: use the committed phpstan.dist.neon
+                    sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
                 }
             }
         }
