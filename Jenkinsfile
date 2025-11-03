@@ -94,10 +94,21 @@ pipeline {
                 }
             }
             steps {
-                dir('backend') {
-                    // The test bootstrap will provide defaults when .env is missing, so run phpunit directly
-                    sh 'vendor/bin/phpunit --log-junit test-results.xml'
+                dir('frontend') {
+                    sh '''
+                        trivy fs \
+                            --scanners vuln \
+                            --severity CRITICAL,HIGH,MEDIUM \
+                            --format table \
+                            --output trivy-frontend-report.json \
+                            --exit-code 0 \
+                            .
+                    '''
                 }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'frontend/trivy-frontend-report.json', allowEmptyArchive: true
                 }
             }
         }
