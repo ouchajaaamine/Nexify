@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     options {
-        timestamps()
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
@@ -33,27 +32,23 @@ pipeline {
                             }
                         }
                         
-                        stage('Backend: Quality Checks') {
-                            parallel {
-                                stage('PHPStan') {
-                                    steps {
-                                        dir('backend') {
-                                            sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
-                                        }
-                                    }
+                        stage('Backend: PHPStan') {
+                            steps {
+                                dir('backend') {
+                                    sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
                                 }
-                                
-                                stage('PHPUnit') {
-                                    steps {
-                                        dir('backend') {
-                                            sh 'vendor/bin/phpunit --log-junit test-results.xml'
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            junit 'backend/test-results.xml'
-                                        }
-                                    }
+                            }
+                        }
+                        
+                        stage('Backend: PHPUnit') {
+                            steps {
+                                dir('backend') {
+                                    sh 'vendor/bin/phpunit --log-junit test-results.xml'
+                                }
+                            }
+                            post {
+                                always {
+                                    junit 'backend/test-results.xml'
                                 }
                             }
                         }
