@@ -14,62 +14,86 @@ class ChatbotServiceTest extends TestCase
 {
     public function testGenerateResponseReturnsApiResponseOnSuccess(): void
     {
-        // mocks
         $httpClient = $this->createMock(HttpClientInterface::class);
         $parameterBag = $this->createMock(ParameterBagInterface::class);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $cache = $this->createMock(CacheInterface::class);
-        // token
-        $parameterBag->method('get')->willReturn('test-token');
-        // fake response
+        
+        $parameterBag->method('get')->willReturnMap([
+            ['google_api_key', 'test-token'],
+            ['kernel.environment', 'test']
+        ]);
+        
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
         $response->method('toArray')->willReturn([
-            'choices' => [ ['message' => ['content' => 'LLM answer']] ]
+            'candidates' => [
+                [
+                    'content' => [
+                        'parts' => [
+                            ['text' => 'LLM answer']
+                        ]
+                    ]
+                ]
+            ]
         ]);
+        
         $httpClient->method('request')->willReturn($response);
-        // cache executes callback
         $cache->method('get')->willReturnCallback(fn($k, $cb) => $cb());
 
-        // act
         $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache);
         $result = $service->generateResponse('hello', null);
-        // assert
+        
         $this->assertSame('LLM answer', $result);
     }
 
     public function testBuildPromptIncludesCampaignContext(): void
     {
-        // mocks
         $httpClient = $this->createMock(HttpClientInterface::class);
         $parameterBag = $this->createMock(ParameterBagInterface::class);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $cache = $this->createMock(CacheInterface::class);
-        $parameterBag->method('get')->willReturn('test-token');
+        
+        $parameterBag->method('get')->willReturnMap([
+            ['google_api_key', 'test-token'],
+            ['kernel.environment', 'test']
+        ]);
 
-        // fake response 'ok'
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
-        $response->method('toArray')->willReturn(['choices' => [ ['message' => ['content' => 'ok']] ] ]);
-        // check prompt contains campaign info
+        $response->method('toArray')->willReturn([
+            'candidates' => [
+                [
+                    'content' => [
+                        'parts' => [
+                            ['text' => 'ok']
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+        
         $httpClient->method('request')->willReturnCallback(function($method, $url, $options) use ($response) {
-            $content = $options['json']['messages'][0]['content'] ?? '';
-            // ensure campaign name + metrics
-            if (strpos($content, 'Spring Sale') === false || strpos($content, 'current_metrics') === false) {
+            $prompt = $options['json']['contents'][0]['parts'][0]['text'] ?? '';
+            if (strpos($prompt, 'Spring Sale') === false || strpos($prompt, 'current_metrics') === false) {
                 throw new \Exception('Prompt did not include campaign context');
             }
             return $response;
         });
+        
         $cache->method('get')->willReturnCallback(fn($k, $cb) => $cb());
 
         $service = new ChatbotService($httpClient, $parameterBag, $entityManager, $cache);
 
-        // campaign context
-        $campaignContext = [ 'campaign_id' => 1, 'name' => 'Spring Sale', 'budget' => '5000.00', 'current_metrics' => ['clicks'=>123] ];
+        $campaignContext = [
+            'campaign_id' => 1,
+            'name' => 'Spring Sale',
+            'budget' => '5000.00',
+            'current_metrics' => ['clicks' => 123]
+        ];
 
         $result = $service->generateResponse('how can I improve', $campaignContext);
 
-        // assert
         $this->assertSame('ok', $result);
     }
 }
