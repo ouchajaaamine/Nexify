@@ -32,27 +32,19 @@ pipeline {
                             }
                         }
                         
-                        stage('Backend Quality') {
-                            parallel {
-                                stage('PHPStan') {
-                                    steps {
-                                        dir('backend') {
-                                            sh 'vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M'
-                                        }
-                                    }
+                        stage('PHPStan & PHPUnit') {
+                            steps {
+                                dir('backend') {
+                                    sh '''
+                                        vendor/bin/phpstan analyse -c phpstan.dist.neon --error-format=table --no-progress --memory-limit=512M &
+                                        vendor/bin/phpunit --log-junit test-results.xml &
+                                        wait
+                                    '''
                                 }
-                                
-                                stage('PHPUnit') {
-                                    steps {
-                                        dir('backend') {
-                                            sh 'vendor/bin/phpunit --log-junit test-results.xml'
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            junit 'backend/test-results.xml'
-                                        }
-                                    }
+                            }
+                            post {
+                                always {
+                                    junit 'backend/test-results.xml'
                                 }
                             }
                         }
@@ -91,48 +83,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Trivy Scans') {
-                            parallel {
-                                stage('Backend Dependencies') {
-                                    steps {
-                                        dir('backend') {
-                                            sh '''
-                                                trivy fs \
-                                                    --scanners vuln \
-                                                    --severity CRITICAL,HIGH \
-                                                    --format table \
-                                                    --output trivy-composer-report.json \
-                                                    --exit-code 0 \
-                                                    .
-                                            '''
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            archiveArtifacts artifacts: 'backend/trivy-composer-report.json', allowEmptyArchive: true
-                                        }
-                                    }
-                                }
-                                
-                                stage('Frontend Dependencies') {
-                                    steps {
-                                        dir('frontend') {
-                                            sh '''
-                                                trivy fs \
-                                                    --scanners vuln \
-                                                    --severity CRITICAL,HIGH \
-                                                    --format table \
-                                                    --output trivy-frontend-report.json \
-                                                    --exit-code 0 \
-                                                    .
-                                            '''
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            archiveArtifacts artifacts: 'frontend/trivy-frontend-report.json', allowEmptyArchive: true
-                                        }
-                                    }
+                        stage('Backend & Frontend Scan') {
+                            steps {
+                                sh '''
+                                    trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --output backend/trivy-composer-report.json --exit-code 0 backend &
+                                    trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --output frontend/trivy-frontend-report.json --exit-code 0 frontend &
+                                    wait
+                                '''
+                            }
+                            post {
+                                always {
+                                    archiveArtifacts artifacts: 'backend/trivy-composer-report.json,frontend/trivy-frontend-report.json', allowEmptyArchive: true
                                 }
                             }
                         }
