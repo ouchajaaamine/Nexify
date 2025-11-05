@@ -173,6 +173,34 @@ pipeline {
                 '''
             }
         }
+
+        stage('Deploy to EKS') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        aws eks update-kubeconfig --name nexify --region eu-west-3
+                        
+                        # Apply Kubernetes manifests
+                        kubectl apply -f k8s/00-namespace.yaml
+                        kubectl apply -f k8s/01-configmap.yaml
+                        kubectl apply -f k8s/02-secrets.yaml
+                        kubectl apply -f k8s/03-postgres.yaml
+                        kubectl apply -f k8s/04-redis.yaml
+                        
+                        # Use --force for deployments to ensure the latest image is pulled
+                        kubectl apply -f k8s/05-backend.yaml
+                        kubectl apply -f k8s/06-frontend.yaml
+                        
+                        # Rollout status to wait for deployment to complete
+                        kubectl rollout status deployment/nexify-backend -n nexify
+                        kubectl rollout status deployment/nexify-frontend -n nexify
+                    '''
+                }
+            }
+        }
     }
     
     post {

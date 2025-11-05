@@ -14,11 +14,9 @@ availabilityZones:
 
 # Managed node group with failover options
 managedNodeGroups:
-  - name: nexify-workers
+  - name: nexify-workers-v2
     instanceTypes:
-      - t3.small     # Primary: 2 vCPUs, 2GB RAM (cheaper, more likely available)
-      - t3.medium    # Fallback: 2 vCPUs, 4GB RAM
-      - t3a.small    # Alternative AMD option
+      - t3.medium    # Primary: 2 vCPUs, 4GB RAM
     desiredCapacity: 2
     minSize: 2
     maxSize: 4
@@ -62,7 +60,7 @@ addons:
 # CloudWatch logging (optional, disabled to save costs)
 cloudWatch:
   clusterLogging:
-    enableTypes: []
+    enableTypes: ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
 # IAM OIDC provider (needed for pod-level permissions)
 iam:
