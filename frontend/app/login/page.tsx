@@ -170,11 +170,7 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-border/50">
-                <p className="text-center text-sm text-muted-foreground">
-                  Demo credentials: admin@example.com / password
-                </p>
-              </div>
+             
             </CardContent>
           </Card>
 

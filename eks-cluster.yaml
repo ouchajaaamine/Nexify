@@ -1,0 +1,69 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: nexify
+  region: eu-west-3
+  version: "1.32"
+
+# Availability zones - trying all 3 zones increases chances of getting capacity
+availabilityZones:
+  - eu-west-3a
+  - eu-west-3b
+  - eu-west-3c
+
+# Managed node group with failover options
+managedNodeGroups:
+  - name: nexify-workers
+    instanceTypes:
+      - t3.small     # Primary: 2 vCPUs, 2GB RAM (cheaper, more likely available)
+      - t3.medium    # Fallback: 2 vCPUs, 4GB RAM
+      - t3a.small    # Alternative AMD option
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 4
+    volumeSize: 30
+    volumeType: gp3
+    labels:
+      role: worker
+      environment: production
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/nexify: "owned"
+    privateNetworking: false  # Use public subnets to avoid NAT Gateway costs
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        efs: true
+        albIngress: true
+        cloudWatch: true
+
+# VPC configuration
+vpc:
+  cidr: 192.168.0.0/16
+  nat:
+    gateway: Single  # Use single NAT gateway to save costs (~$32/month vs $96)
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: false
+
+# Add-ons (will be automatically installed)
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+
+# CloudWatch logging (optional, disabled to save costs)
+cloudWatch:
+  clusterLogging:
+    enableTypes: []
+
+# IAM OIDC provider (needed for pod-level permissions)
+iam:
+  withOIDC: true

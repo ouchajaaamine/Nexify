@@ -13,7 +13,9 @@ use App\State\LoginProcessor;
             uriTemplate: '/login',
             input: LoginRequest::class,
             processor: LoginProcessor::class,
-            name: 'login'
+            name: 'login',
+            inputFormats: ['json' => ['application/json']],
+            outputFormats: ['json' => ['application/json']]
         ),
     ],
     security: 'is_granted("PUBLIC_ACCESS")'

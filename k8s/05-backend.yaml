@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexify-backend
+  namespace: nexify
+  labels:
+    app: nexify-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexify-backend
+  template:
+    metadata:
+      labels:
+        app: nexify-backend
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done;']
+      containers:
+      - name: backend
+        image: 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: nexify-backend-config
+        env:
+        - name: APP_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: nexify-secrets
+              key: APP_SECRET
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nexify-secrets
+              key: JWT_SECRET_KEY
+        - name: JWT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nexify-secrets
+              key: JWT_PUBLIC_KEY
+        - name: JWT_PASSPHRASE
+          valueFrom:
+            secretKeyRef:
+              name: nexify-secrets
+              key: JWT_PASSPHRASE
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nexify-secrets
+              key: GOOGLE_API_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/docs
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/docs
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: nexify
+  labels:
+    app: nexify-backend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: nexify-backend

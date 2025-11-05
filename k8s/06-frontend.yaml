@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexify-frontend
+  namespace: nexify
+  labels:
+    app: nexify-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexify-frontend
+  template:
+    metadata:
+      labels:
+        app: nexify-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: 911541042693.dkr.ecr.eu-west-3.amazonaws.com/nexify-frontend:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Replacing API URLs in built files..."
+          # Replace in all JS files
+          find /app/.next -type f \( -name "*.js" -o -name "*.json" \) 2>/dev/null | while read file; do
+            sed -i 's|http://localhost:8000|http://a652f1bbac0804aee923e5d9fb50b6b9-402558995.eu-west-3.elb.amazonaws.com|g' "$file" 2>/dev/null || true
+          done
+          echo "API URL replacement complete"
+          # Start Next.js
+          exec node server.js
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NEXT_PUBLIC_API_BASE_URL
+          value: "http://a652f1bbac0804aee923e5d9fb50b6b9-402558995.eu-west-3.elb.amazonaws.com"
+        - name: API_BASE_URL
+          value: "http://a652f1bbac0804aee923e5d9fb50b6b9-402558995.eu-west-3.elb.amazonaws.com"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: nexify
+  labels:
+    app: nexify-frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: nexify-frontend

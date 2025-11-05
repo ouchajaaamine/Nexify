@@ -1,36 +1,69 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-.pnpm-debug.log*
-
+# ===================================================================
+# General
+# ===================================================================
 # Environment variables
 .env
-.env.docker
+.env.*
+!/.env.example
+!/.env.test
 
-# IDE
+# IDE & OS specific
 .vscode/
-
-# OS
+.idea/
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs & temporary files
 *.log
-
-# Next.js build output
-.next/
-
-# Symfony cache and logs
-/var/cache/
-/var/log/
-/var/sessions/
-
-# Temporary folders
-tmp/
 temp/
+tmp/
 
-# Jenkins local data
-jenkins/jenkins_home/
-jenkins/.env
-# Docker data
+# ===================================================================
+# Frontend (Next.js / PNPM)
+# ===================================================================
+frontend/node_modules/
+frontend/.next/
+frontend/.pnpm-store/
+frontend/.env.local
+
+# ===================================================================
+# Backend (Symfony)
+# ===================================================================
+# Dependencies
+backend/vendor/
+
+# Cache, logs, and sessions
+backend/var/
+
+# Environment files (allow examples)
+backend/.env
+backend/.env.*.local
+!backend/.env.example
+
+# JWT Keys (sensitive)
+backend/config/jwt/*.pem
+
+# PHPUnit cache
+backend/.phpunit.cache/
+
+# ===================================================================
+# Root-level dependencies (if any)
+# ===================================================================
+/vendor/
+
+# ===================================================================
+# Local Development Data
+# ===================================================================
+# Docker data volumes
 docker/postgres-data/
+
+# Jenkins local build data
+jenkins/jenkins_home/
+
+# ===================================================================
+# Project Artifacts & Scripts (for cleanup)
+# ===================================================================
+/screenshots/
+*.sql
+*.ps1
+*.sh

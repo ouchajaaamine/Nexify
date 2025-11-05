@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexify-backend-config
+  namespace: nexify
+data:
+  APP_ENV: "prod"
+  APP_DEBUG: "0"
+  DATABASE_URL: "postgresql://nexify:nexify123@postgres-service:5432/nexify?serverVersion=15&charset=utf8"
+  DEFAULT_URI: "http://backend-service"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "nexify"
+  POSTGRES_DB: "nexify"
+  CORS_ALLOW_ORIGIN: "^https?://(localhost|127\\.0\\.0\\.1|.*\\.elb\\.amazonaws\\.com)(:[0-9]+)?$"
+  TRUSTED_HOSTS: "^(localhost|127\\.0\\.0\\.1|.*\\.elb\\.amazonaws\\.com)$"
+  REDIS_URL: "redis://redis-service:6379"
+  ASSET_BASE_URL: "http://a652f1bbac0804aee923e5d9fb50b6b9-402558995.eu-west-3.elb.amazonaws.com"
