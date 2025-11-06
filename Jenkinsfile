@@ -175,12 +175,25 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli:latest'
+                    args '-u root:root --entrypoint=""'
+                    reuseNode true
+                }
+            }
             steps {
                 withCredentials([
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
+                        # Install kubectl
+                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        chmod +x kubectl
+                        mv kubectl /usr/local/bin/
+                        
+                        # Configure kubectl to use EKS cluster
                         aws eks update-kubeconfig --name nexify --region eu-west-3
                         
                         # Apply Kubernetes manifests
@@ -190,13 +203,13 @@ pipeline {
                         kubectl apply -f k8s/03-postgres.yaml
                         kubectl apply -f k8s/04-redis.yaml
                         
-                        # Use --force for deployments to ensure the latest image is pulled
+                        # Apply deployments
                         kubectl apply -f k8s/05-backend.yaml
                         kubectl apply -f k8s/06-frontend.yaml
                         
-                        # Rollout status to wait for deployment to complete
-                        kubectl rollout status deployment/nexify-backend -n nexify
-                        kubectl rollout status deployment/nexify-frontend -n nexify
+                        # Wait for deployments to complete
+                        kubectl rollout status deployment/nexify-backend -n nexify --timeout=5m
+                        kubectl rollout status deployment/nexify-frontend -n nexify --timeout=5m
                     '''
                 }
             }
