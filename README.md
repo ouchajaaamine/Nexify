@@ -57,6 +57,7 @@ The project is built with cutting-edge technologies, ensuring scalability, perfo
 - **[Kubernetes (AWS EKS)](https://aws.amazon.com/eks/)** - Container orchestration for scaling and reliability
 - **[Jenkins](https://www.jenkins.io/)** - Automation server for CI/CD pipelines
 - **[AWS ECR](https://aws.amazon.com/ecr/)** - Container registry for Docker images
+- **[AWS CloudWatch](https://aws.amazon.com/cloudwatch/)** - Monitoring, logging, and metrics for application observability
 - **[Nginx](https://www.nginx.com/)** - High-performance web server and reverse proxy
 - **[Supervisor](http://supervisord.org/)** - Process control system for long-running tasks
 
