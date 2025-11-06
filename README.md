@@ -129,7 +129,7 @@ The application runs the following services:
 
 I've implemented a fully automated CI/CD pipeline using Jenkins that ensures code quality, security, and zero-downtime deployments to our Kubernetes cluster on AWS EKS.
 
-![CI/CD Pipeline](screenshots/pipeline.png)
+![CI/CD Pipeline](./screenshots/pipeline.png)
 
 ### Pipeline Stages
 
@@ -182,38 +182,38 @@ This stage runs multiple processes in parallel to optimize build time:
 Here's a sneak peek of the Nexify application.
 
 ### Login Page
-![Login Page](screenshots/loginpage.png)
+![Login Page](./screenshots/loginpage.png)
 
 ### Dashboard
-![Dashboard](screenshots/Screenshot%202025-10-18%20175653.png)
+![Dashboard](./screenshots/Screenshot%202025-10-18%20175653.png)
 
 The main dashboard provides a comprehensive view of your campaigns performance with key metrics including total revenue, active campaigns, affiliate count, conversions, and conversion rates. Interactive charts display revenue trends and performance data over time, helping you monitor campaign effectiveness and identify opportunities for optimization.
 
 ---
 
 ### 📋 Campaign Management
-![Campaign List](screenshots/Screenshot%202025-10-18%20175713.png)
+![Campaign List](./screenshots/Screenshot%202025-10-18%20175713.png)
 
 View campaign performance metrics directly from the dashboard. Track budget allocation, revenue generation, and ROI percentages for each campaign. Filter campaigns by date range and search by campaign name to focus on specific performance data.
 
 ---
 
 ### 🤖 AI Assistant
-![AI Chatbot](screenshots/Screenshot%202025-10-18%20180909.png)
+![AI Chatbot](./screenshots/Screenshot%202025-10-18%20180909.png)
 
 Ask questions about your campaigns in natural language and receive AI-powered responses. The assistant analyzes your campaign data and provides insights, recommendations, and answers to specific queries about performance and optimization.
 
 ---
 
 ### 🎯 Campaign Details
-![Campaign Detail](screenshots/Screenshot%202025-10-18%20181143.png)
+![Campaign Detail](./screenshots/Screenshot%202025-10-18%20181143.png)
 
 Access detailed campaign analytics including budget usage, revenue generation, ROI percentages, and associated affiliates. Each campaign's data is aggregated and visualized to provide clear insights into performance metrics.
 
 ---
 
 ### 👥 Affiliate Overview
-![Affiliates List](screenshots/Screenshot%202025-10-18%20181246.png)
+![Affiliates List](./screenshots/Screenshot%202025-10-18%20181246.png)
 
 Track affiliate partnerships and their campaign associations. View affiliate information and monitor overall affiliate engagement across your campaigns.
 
